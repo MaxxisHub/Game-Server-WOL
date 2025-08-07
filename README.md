@@ -11,7 +11,7 @@ Ein robuster, produktionsbereiter Python-Service, der als transparenter Proxy f�
 ## 📺 Demo
 
 ```
-🔴 Gaming PC: OFF (0W Stromverbrauch)
+🔴 Server PC: OFF (0W Stromverbrauch)
 🟢 Tinker Board: Proxy aktiv (5W)
 
 Spieler verbindet sich → 💤 WoL Magic Packet → 🚀 Server startet
