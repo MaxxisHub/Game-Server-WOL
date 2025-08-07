@@ -70,21 +70,32 @@ class ServerMonitor:
         self.is_monitoring = False
     
     async def check_server_reachable(self) -> bool:
-        """Check if the main server is reachable via ping."""
+        """Check if the main server is reachable via TCP connection instead of ping."""
         try:
-            # Use asyncio subprocess for non-blocking ping
-            process = await asyncio.create_subprocess_exec(
-                'ping', '-c', '1', '-W', str(int(self.server_check_timeout)), self.target_ip,
-                stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL
+            # Use TCP connection test instead of ping (more reliable)
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(self.target_ip, 22),  # SSH port is usually open
+                timeout=self.server_check_timeout
             )
+            writer.close()
+            await writer.wait_closed()
+            logger.debug(f"Server {self.target_ip} reachable via TCP")
+            return True
             
-            await asyncio.wait_for(process.wait(), timeout=self.server_check_timeout + 1)
-            return process.returncode == 0
-            
-        except (asyncio.TimeoutError, OSError) as e:
-            logger.debug(f"Ping check failed for {self.target_ip}: {e}")
-            return False
+        except Exception:
+            # Try Minecraft port as fallback
+            try:
+                reader, writer = await asyncio.wait_for(
+                    asyncio.open_connection(self.target_ip, 25565),
+                    timeout=self.server_check_timeout
+                )
+                writer.close()
+                await writer.wait_closed()
+                logger.debug(f"Server {self.target_ip} reachable via Minecraft port")
+                return True
+            except Exception as e:
+                logger.debug(f"Server not reachable: {e}")
+                return False
     
     async def check_port_open(self, port: int, protocol: str = "tcp") -> bool:
         """Check if a specific port is open on the main server."""
