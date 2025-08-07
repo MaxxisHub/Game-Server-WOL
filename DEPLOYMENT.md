@@ -111,12 +111,12 @@ chmod +x install.sh
 nano /etc/wol-proxy/config.json
 ```
 
-**Für dein Setup:**
+**Beispiel-Konfiguration:**
 ```json
 {
   "server": {
-    "target_ip": "192.168.1.165",
-    "mac_address": "84:47:09:33:81:80",
+    "target_ip": "192.168.1.100",
+    "mac_address": "AA:BB:CC:DD:EE:FF",
     "network_interface": "eth0"
   },
   "timing": {

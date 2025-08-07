@@ -146,35 +146,50 @@ Edit `config.json` with your specific settings:
 
 ### Key Configuration Steps
 
-1. **Find your gaming PC's MAC address:**
+1. **Find your target server's MAC address:**
    ```bash
    # On Windows (run as admin):
    ipconfig /all
    
    # On Linux:
-   ip addr show
+   ip addr show eth0
+   
+   # Or from another device:
+   ping YOUR_SERVER_IP
+   arp -a | grep YOUR_SERVER_IP
    ```
 
-2. **Set up sudo permissions for IP management:**
+2. **Edit the configuration file:**
    ```bash
+   # After installation, edit the config:
+   sudo nano /etc/wol-proxy/config.json
+   
+   # Update these values:
+   # "target_ip": "YOUR_SERVER_IP"
+   # "mac_address": "YOUR_SERVER_MAC"
+   ```
+
+3. **Set up sudo permissions (done automatically by installer):**
+   ```bash
+   # The installer creates this automatically:
    echo "wol-proxy ALL=(ALL) NOPASSWD: /sbin/ip addr add *, /sbin/ip addr del *" | sudo tee /etc/sudoers.d/wol-proxy
    ```
 
-3. **Validate your configuration:**
+4. **Validate your configuration:**
    ```bash
-   python3 main.py --validate-config
+   python3 main.py --validate-config --config /etc/wol-proxy/config.json
    ```
 
 ## 🎯 Gaming PC Setup
 
-### Windows 11 Setup
+### Target Server Setup (Windows/Linux)
 
 1. **Enable Wake-on-LAN in BIOS/UEFI:**
    - Boot to BIOS settings
    - Look for "Wake on LAN", "WoL", or "Power Management" settings
    - Enable relevant options
 
-2. **Windows Network Adapter Settings:**
+2. **Windows Network Settings:**
    ```powershell
    # Run PowerShell as Administrator
    # Enable Wake on Magic Packet
@@ -184,19 +199,32 @@ Edit `config.json` with your specific settings:
    Get-NetAdapterPowerManagement
    ```
 
-3. **Windows Power Settings:**
-   - Control Panel → Network → Change Adapter Settings
-   - Right-click your Ethernet adapter → Properties
-   - Configure → Power Management tab
-   - ✅ "Allow this device to wake the computer"
-   - ✅ "Only allow a magic packet to wake the computer"
+3. **Linux Network Settings:**
+   ```bash
+   # Enable WoL on network interface
+   sudo ethtool -s eth0 wol g
+   
+   # Verify settings
+   sudo ethtool eth0 | grep "Wake-on"
+   ```
 
 4. **Firewall Configuration:**
+   
+   **Windows:**
    ```powershell
    # Allow game server ports (run as Administrator)
    netsh advfirewall firewall add rule name="Minecraft Server" dir=in action=allow protocol=TCP localport=25565
    netsh advfirewall firewall add rule name="Satisfactory Game" dir=in action=allow protocol=UDP localport=7777
    netsh advfirewall firewall add rule name="Satisfactory Query" dir=in action=allow protocol=UDP localport=15000
+   ```
+   
+   **Linux:**
+   ```bash
+   # UFW firewall
+   sudo ufw allow 25565/tcp
+   sudo ufw allow 7777/udp
+   sudo ufw allow 15000/udp
+   sudo ufw allow 15777/udp
    ```
 
 ## 🔧 Usage

@@ -24,7 +24,7 @@ class ConfigManager:
         return {
             "server": {
                 "target_ip": "192.168.1.100",
-                "mac_address": "00:1B:44:11:3A:B7",
+                "mac_address": "AA:BB:CC:DD:EE:FF",
                 "network_interface": "eth0"
             },
             "timing": {
@@ -200,7 +200,7 @@ class ConfigManager:
             "server": {
                 "_comment": "IP address and MAC of the main game server",
                 "target_ip": "192.168.1.100",
-                "mac_address": "00:1B:44:11:3A:B7",
+                "mac_address": "AA:BB:CC:DD:EE:FF",
                 "network_interface": "eth0"
             },
             "_comment_timing": "Timing and timeout configuration",
