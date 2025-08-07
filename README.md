@@ -1,505 +1,294 @@
 # 🎮 Wake-on-LAN Game Server Proxy
 
-> **Sparen Sie Energie! Lassen Sie Ihren Gaming Server nur dann laufen, wenn wirklich gespielt wird.**
+> **Sparen Sie Energie! Lassen Sie Ihren Game Server nur dann laufen, wenn wirklich gespielt wird.**
 
-Ein robuster, produktionsbereiter Python-Service, der als transparenter Proxy für Game Server fungiert und Ihren Hauptserver automatisch per Wake-on-LAN aufweckt, wenn Spieler beitreten möchten. Speziell für stromsparende ARM-Boards entwickelt, die 24/7 laufen, während Ihr Server PC aus bleibt, bis er gebraucht wird.
+Ein robuster Python-Service, der als transparenter Proxy für Game Server fungiert und Ihren Hauptserver automatisch per Wake-on-LAN aufweckt, wenn Spieler beitreten möchten. Speziell für stromsparende ARM-Boards entwickelt.
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![ARM Compatible](https://img.shields.io/badge/ARM-Compatible-green.svg)](https://www.arm.com/)
 
-## 📺 Demo
+## 🎯 Unterstützte Spiele
+
+- **Minecraft (Java Edition)** - Vollständige Protokollunterstützung mit benutzerdefinierten Server-Status
+- **Satisfactory** - UDP-Traffic-Erkennung auf Game-Ports (7777, 15000, 15777)
+
+## ⚡ So funktioniert es
 
 ```
-🔴 Server PC: OFF (0W Stromverbrauch)
+🔴 Server PC: AUS (0W Stromverbrauch)
 🟢 ARM Board: Proxy aktiv (5W)
 
-Spieler verbindet sich → 💤 WoL Magic Packet → 🚀 Server startet
-├── Minecraft: "Join to start server" → Login → Server wake
-└── Satisfactory: UDP Traffic → Sofortiger Wake
+Spieler verbindet → 💤 WoL Magic Packet → 🚀 Server startet automatisch
 ```
 
-## 🎮 Supported Games
+### Zustandsmaschine
+1. **OFFLINE** - Proxy übernimmt Server-IP, zeigt "Join to start server"
+2. **WAKING** - WoL-Paket gesendet, kurzer Übergangszustand
+3. **STARTING** - Server bootet, zeigt "Server starting" Nachrichten  
+4. **PROXYING** - Server online, transparente Verkehrsweiterleitung
+5. **MONITORING** - Überwacht Server-Gesundheit, bereit für Rückkehr in Proxy-Modus
 
-- **Minecraft (Java Edition)** - Full protocol support with custom server list status and login detection
-- **Satisfactory** - UDP traffic detection on game ports (7777, 15000, 15777)
-
-## ✨ Key Features
-
-- **Zero Manual Intervention** - Fully automated wake/sleep cycles
-- **Protocol-Aware** - Distinguishes between server status pings and real join attempts
-- **Transparent Proxying** - Seamless handoff to main server when online
-- **ARM Board Optimized** - Minimal resource usage (<50MB RAM)
-- **Production Ready** - Systemd integration, logging, monitoring, and error handling
-- **Configurable** - All settings externalized in JSON configuration
-- **Secure** - Minimal privileges, sandboxed execution
-
-## 🏗️ How It Works
-
-```mermaid
-graph TB
-    A[Player connects] --> B{Server state?}
-    B -->|Offline| C[Proxy responds with MOTD]
-    B -->|Offline + Join attempt| D[Send WoL packet]
-    D --> E[Show 'Server starting' message]
-    E --> F[Wait for main server boot]
-    F --> G[Release IP to main server]
-    G --> H[Transparent forwarding mode]
-    H --> I{Server online?}
-    I -->|Yes| H
-    I -->|No| J[Rebind IP, return to proxy mode]
-    J --> B
-```
-
-### State Machine
-
-1. **OFFLINE** - Proxy owns the server IP, shows "Join to start server" in server lists
-2. **WAKING** - WoL packet sent, brief transition state  
-3. **STARTING** - Server booting, shows "Server starting" messages
-4. **PROXYING** - Main server online, transparent traffic forwarding
-5. **MONITORING** - Watching main server health, ready to resume proxy mode
-
-## 📋 Requirements
+## 📋 Voraussetzungen
 
 ### Hardware
-- ARM board (Raspberry Pi 3+, ASUS Tinker Board, etc.) or any Linux system
-- Minimum 512MB RAM, 1GB storage
-- Ethernet connection (WiFi not recommended)
+- ARM Board (Raspberry Pi 3+, ASUS Tinker Board, etc.)
+- Mindestens 512MB RAM, 1GB Speicher
+- Ethernet-Verbindung (WiFi nicht empfohlen)
 
-### Software  
-- Debian-based OS (Raspberry Pi OS, Armbian, Ubuntu)
+### Software
+- Debian-basiertes OS (Raspberry Pi OS, Armbian, Ubuntu)
 - Python 3.9+
-- Network interface management capabilities
-- Systemd for service management
+- Systemd für Service-Management
 
-### Network Setup
-- Static IP address for your server PC
-- Wake-on-LAN enabled on server PC
-- Port forwarding configured for game ports (if remote access needed)
+### Netzwerk-Setup
+- Statische IP-Adresse für Ihren Server PC
+- Wake-on-LAN aktiviert auf Server PC
+- Port-Weiterleitung für Game-Ports (bei Remote-Zugriff)
 
-## 🚀 Quick Installation
+## 🚀 Installation
 
-### Option 1: Automated Installation (Recommended)
+### Automatische Installation (Empfohlen)
 
 ```bash
-# Download and run the installer
+# Repository klonen
+git clone https://github.com/MaxxisHub/Game-Server-WOL.git
+cd Game-Server-WOL
+
+# Installation ausführen
+chmod +x install.sh
 sudo ./install.sh
 ```
 
-### Option 2: Manual Installation
+### Manuelle Installation
 
 ```bash
-# Install system dependencies
-sudo apt update && sudo apt install -y python3 python3-pip python3-venv git iputils-arping
+# System-Abhängigkeiten installieren
+sudo apt update && sudo apt install -y python3 python3-pip python3-venv git iputils-arping iproute2
 
-# Clone repository
+# Repository klonen
 git clone https://github.com/MaxxisHub/Game-Server-WOL.git
-cd wol-game-proxy
+cd Game-Server-WOL
 
-# Create virtual environment
+# Virtual Environment erstellen
 python3 -m venv venv
 source venv/bin/activate
 
-# Install Python dependencies
+# Python-Abhängigkeiten installieren
 pip install -r requirements.txt
 
-# Generate example configuration
+# Beispiel-Konfiguration erstellen
 python3 main.py --create-config
-
-# Edit configuration with your settings
-cp config.json.example config.json
-nano config.json
 ```
 
-## ⚙️ Configuration
+## ⚙️ Konfiguration
 
-Edit `config.json` with your specific settings:
+### Schritt 1: MAC-Adresse des Servers herausfinden
 
+```bash
+# Auf Windows Server (als Administrator):
+ipconfig /all
+
+# Auf Linux Server:
+ip addr show eth0
+
+# Von anderem Gerät aus:
+ping YOUR_SERVER_IP
+arp -a | grep YOUR_SERVER_IP
+```
+
+### Schritt 2: Konfiguration bearbeiten
+
+```bash
+# Nach der Installation:
+sudo nano /etc/wol-proxy/config.json
+```
+
+**Beispiel-Konfiguration:**
 ```json
 {
   "server": {
-    "target_ip": "192.168.1.100",         // Your server PC's IP
-    "mac_address": "AA:BB:CC:DD:EE:FF",   // Your server PC's MAC address
-    "network_interface": "eth0"            // Network interface on proxy device
+    "target_ip": "192.168.1.100",
+    "mac_address": "AA:BB:CC:DD:EE:FF",
+    "network_interface": "eth0"
   },
   "timing": {
-    "boot_wait_seconds": 90,              // Max time to wait for server boot
-    "health_check_interval": 15,          // Server health check frequency
-    "wol_retry_interval": 5,              // Time between WoL retries
-    "connection_timeout": 30              // Network timeout for connections
+    "boot_wait_seconds": 90,
+    "health_check_interval": 15,
+    "wol_retry_interval": 5,
+    "connection_timeout": 30
   },
   "minecraft": {
-    "enabled": true,                      // Enable Minecraft support
-    "port": 25565,                        // Minecraft server port
+    "enabled": true,
+    "port": 25565,
     "motd_offline": "§aJoin to start server",
     "motd_starting": "§eServer is starting, please wait",
     "kick_message": "§eServer is starting up, try joining again in a minute."
   },
   "satisfactory": {
-    "enabled": true,                      // Enable Satisfactory support
-    "game_port": 7777,                    // Main game port
-    "query_port": 15000,                  // Query port
-    "beacon_port": 15777                  // Beacon port
+    "enabled": true,
+    "game_port": 7777,
+    "query_port": 15000,
+    "beacon_port": 15777
   }
 }
 ```
 
-### Key Configuration Steps
+### Schritt 3: Konfiguration validieren
 
-1. **Find your target server's MAC address:**
-   ```bash
-   # On Windows (run as admin):
-   ipconfig /all
-   
-   # On Linux:
-   ip addr show eth0
-   
-   # Or from another device:
-   ping YOUR_SERVER_IP
-   arp -a | grep YOUR_SERVER_IP
-   ```
-
-2. **Edit the configuration file:**
-   ```bash
-   # After installation, edit the config:
-   sudo nano /etc/wol-proxy/config.json
-   
-   # Update these values:
-   # "target_ip": "YOUR_SERVER_IP"
-   # "mac_address": "YOUR_SERVER_MAC"
-   ```
-
-3. **Set up sudo permissions (done automatically by installer):**
-   ```bash
-   # The installer creates this automatically:
-   echo "wol-proxy ALL=(ALL) NOPASSWD: /sbin/ip addr add *, /sbin/ip addr del *" | sudo tee /etc/sudoers.d/wol-proxy
-   ```
-
-4. **Validate your configuration:**
-   ```bash
-   python3 main.py --validate-config --config /etc/wol-proxy/config.json
-   ```
+```bash
+sudo -u wol-proxy /opt/wol-proxy/venv/bin/python /opt/wol-proxy/main.py --config /etc/wol-proxy/config.json --validate-config
+```
 
 ## 🎯 Server PC Setup
 
-### Target Server Setup (Windows/Linux)
+### BIOS/UEFI Einstellungen
+- Boot in BIOS-Einstellungen
+- Suchen Sie nach "Wake on LAN", "WoL" oder "Power Management"
+- Aktivieren Sie die entsprechenden Optionen
 
-1. **Enable Wake-on-LAN in BIOS/UEFI:**
-   - Boot to BIOS settings
-   - Look for "Wake on LAN", "WoL", or "Power Management" settings
-   - Enable relevant options
+### Windows Setup
+```powershell
+# PowerShell als Administrator ausführen
+Get-NetAdapter | Set-NetAdapterPowerManagement -WakeOnMagicPacket Enabled
 
-2. **Windows Network Settings:**
-   ```powershell
-   # Run PowerShell as Administrator
-   # Enable Wake on Magic Packet
-   Get-NetAdapter | Set-NetAdapterPowerManagement -WakeOnMagicPacket Enabled
-   
-   # Verify settings
-   Get-NetAdapterPowerManagement
-   ```
-
-3. **Linux Network Settings:**
-   ```bash
-   # Enable WoL on network interface
-   sudo ethtool -s eth0 wol g
-   
-   # Verify settings
-   sudo ethtool eth0 | grep "Wake-on"
-   ```
-
-4. **Firewall Configuration:**
-   
-   **Windows:**
-   ```powershell
-   # Allow game server ports (run as Administrator)
-   netsh advfirewall firewall add rule name="Minecraft Server" dir=in action=allow protocol=TCP localport=25565
-   netsh advfirewall firewall add rule name="Satisfactory Game" dir=in action=allow protocol=UDP localport=7777
-   netsh advfirewall firewall add rule name="Satisfactory Query" dir=in action=allow protocol=UDP localport=15000
-   ```
-   
-   **Linux:**
-   ```bash
-   # UFW firewall
-   sudo ufw allow 25565/tcp
-   sudo ufw allow 7777/udp
-   sudo ufw allow 15000/udp
-   sudo ufw allow 15777/udp
-   ```
-
-## 🔧 Usage
-
-### Running the Service
-
-```bash
-# Start the proxy
-python3 main.py
-
-# With custom config
-python3 main.py --config /path/to/config.json
-
-# Validate configuration
-python3 main.py --validate-config
-
-# Check status (if monitoring enabled)
-python3 main.py --status
+# Einstellungen überprüfen
+Get-NetAdapterPowerManagement
 ```
 
-### Systemd Service Management
+### Linux Setup
+```bash
+# WoL auf Netzwerk-Interface aktivieren
+sudo ethtool -s eth0 wol g
+
+# Einstellungen überprüfen  
+sudo ethtool eth0 | grep "Wake-on"
+```
+
+## 🔧 Service-Verwaltung
 
 ```bash
-# Install and start service
+# Service starten und aktivieren
 sudo systemctl enable --now wol-proxy.service
 
-# Check status
+# Status prüfen
 sudo systemctl status wol-proxy.service
 
-# View logs
+# Logs anzeigen
 journalctl -u wol-proxy.service -f
 
-# Restart service
+# Service neu starten
 sudo systemctl restart wol-proxy.service
+
+# Konfiguration neu laden
+sudo systemctl reload wol-proxy.service
 ```
 
-### Monitoring and Logs
+## 📊 Überwachung
 
+### HTTP Status-Endpoint
 ```bash
-# Real-time log monitoring
-tail -f /var/log/wol-proxy.log
-
-# Service status via HTTP (if enabled)
+# Vollständigen Status abrufen
 curl http://localhost:8080/status
 
-# Check proxy statistics
-curl http://localhost:8080/status | jq '.proxy.statistics'
+# Nur Health-Check
+curl http://localhost:8080/health
 ```
 
-## 🎮 Game-Specific Behavior
-
-### Minecraft
-
-- **Server List Status**: Shows custom MOTD based on server state
-  - Offline: "🟢 Join to start server" 
-  - Starting: "🟡 Server is starting, please wait"
-- **Join Attempts**: Detects real login attempts vs status pings
-- **Protocol Support**: Compatible with modern Minecraft versions (1.19+)
-- **Custom Messages**: All text fully configurable
-
-### Satisfactory
-
-- **Limitations**: Cannot appear "online" in server browser due to protocol complexity
-- **Wake Trigger**: Any UDP traffic on game ports triggers server wake
-- **Connection Method**: Players should connect via direct IP
-- **Port Forwarding**: Ensure all three UDP ports are forwarded
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-**Server not waking up:**
+### Log-Analyse
 ```bash
-# Test WoL packet manually
-wakeonlan 00:1B:44:11:3A:B7
+# Live-Logs verfolgen
+tail -f /var/log/wol-proxy.log
 
-# Check network connectivity
+# Nach bestimmten Ereignissen suchen
+grep "Wake-on-LAN" /var/log/wol-proxy.log
+grep "State transition" /var/log/wol-proxy.log
+```
+
+## 🔍 Fehlerbehandlung
+
+### Server wacht nicht auf
+```bash
+# WoL-Paket manuell testen
+wakeonlan AA:BB:CC:DD:EE:FF
+
+# Netzwerk-Konnektivität prüfen
 ping 192.168.1.100
 
-# Verify MAC address
+# MAC-Adresse überprüfen
 arp -a | grep 192.168.1.100
 ```
 
-**IP binding failures:**
+### IP-Binding-Fehler
 ```bash
-# Check current IP bindings
+# Aktuelle IP-Bindungen prüfen
 ip addr show
 
-# Test IP management permissions
+# IP-Management-Berechtigungen testen
 sudo ip addr add 192.168.1.100/24 dev eth0
 sudo ip addr del 192.168.1.100/24 dev eth0
 ```
 
-**Permission errors:**
+### Service-Probleme
 ```bash
-# Check sudoers configuration
-sudo visudo -c
-sudo cat /etc/sudoers.d/wol-proxy
+# Service-Logs prüfen
+journalctl -u wol-proxy.service -n 50
 
-# Verify user permissions
+# Konfiguration validieren
+/opt/wol-proxy/venv/bin/python /opt/wol-proxy/main.py --validate-config
+
+# Berechtigungen prüfen
+sudo cat /etc/sudoers.d/wol-proxy
 groups wol-proxy
 ```
 
-### Log Analysis
+## 🎮 Game-spezifisches Verhalten
 
-```bash
-# Filter for specific events
-journalctl -u wol-proxy.service | grep "Wake-on-LAN"
-journalctl -u wol-proxy.service | grep "State transition"
+### Minecraft
+- **Server-Liste**: Zeigt benutzerdefinierten MOTD basierend auf Server-Status
+  - Offline: "🟢 Join to start server"
+  - Starting: "🟡 Server is starting, please wait"
+- **Join-Versuche**: Erkennt echte Login-Versuche vs. Status-Pings
+- **Protokoll-Unterstützung**: Kompatibel mit modernen Minecraft-Versionen
 
-# Check configuration validation
-journalctl -u wol-proxy.service | grep "validation"
-```
-
-### Network Diagnostics
-
-```bash
-# Check port binding
-netstat -tulpn | grep :25565
-ss -tulpn | grep :7777
-
-# Test game connectivity
-nc -zv localhost 25565
-nc -zuv localhost 7777
-```
-
-## 📊 Monitoring and Status
-
-The proxy provides a built-in HTTP status endpoint (configurable port, default 8080):
-
-```bash
-# Get full status
-curl http://localhost:8080/status
-
-# Health check only  
-curl http://localhost:8080/health
-```
-
-### Status Response Example
-```json
-{
-  "status": "running",
-  "proxy": {
-    "proxy_state": "offline",
-    "server_state": "offline", 
-    "ip_bound": true,
-    "statistics": {
-      "wake_attempts": 5,
-      "successful_wakes": 4,
-      "minecraft_connections": 23,
-      "satisfactory_connections": 8
-    }
-  }
-}
-```
-
-## 🔐 Security Considerations
-
-- Service runs as dedicated user with minimal privileges
-- Systemd sandboxing enabled (PrivateTmp, ProtectSystem, etc.)
-- Only necessary network capabilities granted
-- Sudo access limited to specific IP management commands
-- Configuration files have secure permissions
-- No credentials or sensitive data in logs
-
-## 🛠️ Advanced Configuration
-
-### Multiple Game Servers
-
-You can run multiple proxy instances for different servers:
-
-```bash
-# Copy and modify configuration
-cp config.json minecraft-server.json
-cp config.json satisfactory-server.json
-
-# Run separate instances
-python3 main.py --config minecraft-server.json &
-python3 main.py --config satisfactory-server.json &
-```
-
-### Custom Network Interface
-
-For complex network setups:
-
-```json
-{
-  "server": {
-    "network_interface": "br0",  // Bridge interface
-    "target_ip": "10.0.1.100"    // Different subnet
-  }
-}
-```
-
-### Performance Tuning
-
-For high-traffic scenarios:
-
-```json
-{
-  "timing": {
-    "health_check_interval": 5,    // More frequent health checks
-    "boot_wait_seconds": 120,      // Longer boot timeout
-    "connection_timeout": 10       // Faster connection timeouts
-  }
-}
-```
+### Satisfactory
+- **Einschränkungen**: Kann aufgrund der Protokoll-Komplexität nicht als "online" im Server-Browser erscheinen
+- **Wake-Trigger**: Jeder UDP-Traffic auf Game-Ports löst Server-Wake aus
+- **Verbindungsmethode**: Spieler sollten sich über direkte IP verbinden
+- **Port-Weiterleitung**: Stellen Sie sicher, dass alle drei UDP-Ports weitergeleitet werden
 
 ## 📈 Performance
 
-### Resource Usage (Typical ARM Board)
+### Ressourcenverbrauch (Typisches ARM Board)
+- **Arbeitsspeicher**: 25-45MB RAM
+- **CPU**: <1% durchschnittliche Nutzung  
+- **Netzwerk**: Minimaler Bandbreitenverbrauch
+- **Speicher**: <100MB Installation
 
-- **Memory**: 25-45MB RAM
-- **CPU**: <1% average usage
-- **Network**: Minimal bandwidth usage
-- **Storage**: <100MB installation
+### Skalierbarkeit
+- **Gleichzeitige Verbindungen**: 100+ simultane Spieler unterstützt
+- **Antwortzeit**: <10ms für Status-Anfragen
+- **Wake-Zeit**: 60-90 Sekunden typische Server-Boot-Zeit
 
-### Scalability
+## 🤝 Beitragen
 
-- **Concurrent connections**: 100+ simultaneous players supported
-- **Response time**: <10ms for status requests
-- **Wake time**: 60-90 seconds typical server boot time
+Beiträge sind willkommen! Bitte verwenden Sie:
+- **Issues**: Fehlerberichte und Feature-Anfragen
+- **Pull Requests**: Code-Verbesserungen und neue Features
+- **Dokumentation**: Hilfe bei der Verbesserung der Setup-Anleitungen
 
-## 🤝 Contributing
+## 📝 Lizenz
 
-Contributions are welcome! Please see:
+Dieses Projekt ist unter der MIT-Lizenz lizenziert - siehe die [LICENSE](LICENSE) Datei für Details.
 
-- **Issues**: Bug reports and feature requests
-- **Pull Requests**: Code improvements and new features
-- **Documentation**: Help improve setup guides
+## 🙏 Danksagungen
 
-### Development Setup
-
-```bash
-git clone https://github.com/example/wol-game-proxy.git
-cd wol-game-proxy
-python3 -m venv dev-env
-source dev-env/bin/activate
-pip install -r requirements.txt
-pip install -r requirements-dev.txt  # If available
-```
-
-### Testing
-
-```bash
-# Run unit tests
-python3 -m pytest tests/
-
-# Validate code style  
-python3 -m flake8 src/
-
-# Type checking
-python3 -m mypy src/
-```
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Minecraft protocol documentation from [wiki.vg](https://wiki.vg/Protocol)
-- Wake-on-LAN implementation based on standard magic packet format
-- Systemd service hardening best practices
-- ARM optimization techniques for Python services
-
-## 📞 Support
-
-- **Documentation**: Check this README and inline code comments
-- **Issues**: Use GitHub Issues for bug reports
-- **Community**: Join discussions in GitHub Discussions
-- **Security**: Email security issues privately
+- Minecraft-Protokolldokumentation von [wiki.vg](https://wiki.vg/Protocol)
+- Wake-on-LAN-Implementierung basierend auf standardmäßigem Magic-Packet-Format
+- Systemd-Service-Härtungs-Best-Practices
 
 ---
 
 **Happy Gaming! 🎮**
 
-*Keep your main server sleeping until players actually want to play!*
+*Lassen Sie Ihren Server schlafen, bis Spieler wirklich spielen möchten!*

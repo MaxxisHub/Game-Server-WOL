@@ -1,6 +1,6 @@
 [Unit]
 Description=Wake-on-LAN Game Server Proxy
-Documentation=https://github.com/example/wol-game-proxy
+Documentation=https://github.com/MaxxisHub/Game-Server-WOL
 After=network-online.target
 Wants=network-online.target
 
@@ -27,7 +27,7 @@ PrivateTmp=true
 PrivateDevices=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/log/wol-proxy.log /var/log
+ReadWritePaths=/var/log /var/log/wol-proxy.log
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
