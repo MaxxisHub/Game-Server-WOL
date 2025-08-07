@@ -1,0 +1,49 @@
+[Unit]
+Description=Wake-on-LAN Game Server Proxy
+Documentation=https://github.com/example/wol-game-proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=wol-proxy
+Group=wol-proxy
+WorkingDirectory=/opt/wol-proxy
+ExecStart=/opt/wol-proxy/venv/bin/python /opt/wol-proxy/main.py --config /etc/wol-proxy/config.json
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Restart configuration
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=5
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/wol-proxy.log /var/log
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+# Resource limits for ARM boards
+MemoryMax=256M
+CPUQuota=50%
+TasksMax=64
+
+# Capabilities needed for network operations
+AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_ADMIN
+
+# Environment
+Environment=PYTHONPATH=/opt/wol-proxy
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
