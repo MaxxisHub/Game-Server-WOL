@@ -332,9 +332,9 @@ class IPAddressManager:
     async def bind_ip_address(self) -> bool:
         """Bind the target IP address to the network interface."""
         try:
-            # Use ip command to add address
+            # Use ip command to add address (with CAP_NET_ADMIN capability)
             cmd = [
-                'sudo', 'ip', 'addr', 'add', 
+                'ip', 'addr', 'add', 
                 f'{self.target_ip}/24', 
                 'dev', self.network_interface
             ]
@@ -373,9 +373,9 @@ class IPAddressManager:
             return True
             
         try:
-            # Use ip command to delete address
+            # Use ip command to delete address (with CAP_NET_ADMIN capability)
             cmd = [
-                'sudo', 'ip', 'addr', 'del', 
+                'ip', 'addr', 'del', 
                 f'{self.target_ip}/24', 
                 'dev', self.network_interface
             ]
