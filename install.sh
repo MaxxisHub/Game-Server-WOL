@@ -112,11 +112,27 @@ install_application() {
     cp "$SCRIPT_DIR/main.py" "$INSTALL_DIR/"
     cp "$SCRIPT_DIR/requirements.txt" "$INSTALL_DIR/"
     
+    # Copy CLI tools to system path
+    if [[ -f "$SCRIPT_DIR/wol-setup" ]]; then
+        cp "$SCRIPT_DIR/wol-setup" /usr/local/bin/
+        chmod +x /usr/local/bin/wol-setup
+    fi
+    
+    if [[ -f "$SCRIPT_DIR/wol-settings" ]]; then
+        cp "$SCRIPT_DIR/wol-settings" /usr/local/bin/
+        chmod +x /usr/local/bin/wol-settings
+    fi
+    
+    if [[ -f "$SCRIPT_DIR/wol-test" ]]; then
+        cp "$SCRIPT_DIR/wol-test" /usr/local/bin/
+        chmod +x /usr/local/bin/wol-test
+    fi
+    
     # Set permissions
     chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
     chmod +x "$INSTALL_DIR/main.py"
     
-    log_info "Application files installed"
+    log_info "Application files and CLI tools installed"
 }
 
 # Create Python virtual environment
@@ -245,34 +261,18 @@ validate_installation() {
     log_info "Installation validation complete"
 }
 
-# Print post-installation instructions
-print_instructions() {
+# Run interactive setup
+run_interactive_setup() {
     echo
-    log_info "Installation complete!"
+    log_info "Starting interactive setup..."
     echo
-    echo "Next steps:"
-    echo "1. Edit the configuration file: $CONFIG_DIR/config.json"
-    echo "   - Set your game server IP address and MAC address"
-    echo "   - Configure game-specific settings"
-    echo "   - Adjust timing parameters as needed"
-    echo
-    echo "2. Validate your configuration:"
-    echo "   sudo -u $SERVICE_USER $INSTALL_DIR/venv/bin/python $INSTALL_DIR/main.py --config $CONFIG_DIR/config.json --validate-config"
-    echo
-    echo "3. Start the service:"
-    echo "   systemctl start wol-proxy.service"
-    echo
-    echo "4. Check service status:"
-    echo "   systemctl status wol-proxy.service"
-    echo
-    echo "5. View logs:"
-    echo "   journalctl -u wol-proxy.service -f"
-    echo "   tail -f $LOG_DIR/wol-proxy.log"
-    echo
-    echo "Configuration file location: $CONFIG_DIR/config.json"
-    echo "Installation directory: $INSTALL_DIR"
-    echo "Log file: $LOG_DIR/wol-proxy.log"
-    echo
+    
+    if command -v wol-setup >/dev/null 2>&1; then
+        wol-setup
+    else
+        log_error "wol-setup command not found. Something went wrong with the installation."
+        exit 1
+    fi
 }
 
 # Main installation function
@@ -291,9 +291,7 @@ main() {
     install_service
     setup_logging
     validate_installation
-    print_instructions
-    
-    log_info "Installation completed successfully!"
+    run_interactive_setup
 }
 
 # Run installation

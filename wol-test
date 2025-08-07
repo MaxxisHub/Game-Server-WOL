@@ -1,0 +1,66 @@
+#!/bin/bash
+# WoL Game Server Proxy - Test Wake-on-LAN
+
+set -e
+
+CONFIG_FILE="/etc/wol-proxy/config.json"
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    log_error "Configuration file not found. Run wol-setup first."
+    exit 1
+fi
+
+# Extract IP and MAC from config
+SERVER_IP=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['server']['target_ip'])" 2>/dev/null)
+MAC_ADDRESS=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['server']['mac_address'])" 2>/dev/null)
+
+if [[ -z "$SERVER_IP" ]] || [[ -z "$MAC_ADDRESS" ]]; then
+    log_error "Could not read server configuration"
+    exit 1
+fi
+
+echo -e "${BLUE}🧪 WoL Proxy Test${NC}"
+echo "=================="
+echo "Server IP: $SERVER_IP"
+echo "MAC Address: $MAC_ADDRESS"
+echo
+
+# Test 1: Send WoL packet
+log_info "Sending Wake-on-LAN packet..."
+if command -v wakeonlan >/dev/null 2>&1; then
+    wakeonlan "$MAC_ADDRESS"
+    log_info "WoL packet sent!"
+else
+    log_error "wakeonlan command not found. Install with: apt install wakeonlan"
+    exit 1
+fi
+
+# Test 2: Check proxy service
+log_info "Checking proxy service status..."
+if systemctl is-active --quiet wol-proxy.service; then
+    log_info "✅ Service is running"
+else
+    log_error "❌ Service is not running"
+    exit 1
+fi
+
+# Test 3: Check status endpoint
+log_info "Testing status endpoint..."
+if curl -s http://localhost:8080/health >/dev/null 2>&1; then
+    log_info "✅ Status endpoint responding"
+    echo
+    echo "Proxy status:"
+    curl -s http://localhost:8080/status | python3 -m json.tool 2>/dev/null || echo "API working"
+else
+    log_error "❌ Status endpoint not responding"
+fi
+
+echo
+log_info "Test complete! Check if your server wakes up in ~${BOOT_WAIT:-90} seconds."
