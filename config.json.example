@@ -2,9 +2,9 @@
   "_comment_server": "Main server configuration",
   "server": {
     "_comment": "IP address and MAC of the main game server",
-    "target_ip": "192.168.1.100",
+    "target_ip": "192.168.1.165",
     "mac_address": "AA:BB:CC:DD:EE:FF",
-    "network_interface": "eth0"
+    "network_interface": "end0"
   },
   "_comment_timing": "Timing and timeout configuration",
   "timing": {
