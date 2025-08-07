@@ -5,7 +5,7 @@ Komplette Anleitung für die Installation auf ARM-basierten Systemen (Tinker Boa
 ## 📋 Übersicht
 
 Dieses Projekt implementiert einen Wake-on-LAN Proxy für Game Server:
-- **Entwicklung**: Auf Gaming PC mit Claude Code
+- **Entwicklung**: Auf Server PC mit Claude Code
 - **Deployment**: Auf ARM Board (Tinker Board/Raspberry Pi)
 - **Ziel**: Server PC automatisch aufwecken bei Spielerverbindungen
 
@@ -26,7 +26,7 @@ Dieses Projekt implementiert einen Wake-on-LAN Proxy für Game Server:
 ### Schritt 2: Code auf GitHub hochladen
 
 ```bash
-# Im Gaming PC Terminal (PowerShell/CMD):
+# Im Server PC Terminal (PowerShell/CMD):
 cd /workspace
 
 # Git Repository initialisieren
@@ -62,7 +62,7 @@ winget install Git.Git
 ### Schritt 1: SSH-Verbindung zum Tinker Board
 
 ```bash
-# Von Gaming PC aus:
+# Von Server PC aus:
 ssh root@192.168.1.179
 ```
 

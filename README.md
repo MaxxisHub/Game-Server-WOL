@@ -2,7 +2,7 @@
 
 > **Sparen Sie Energie! Lassen Sie Ihren Gaming Server nur dann laufen, wenn wirklich gespielt wird.**
 
-Ein robuster, produktionsbereiter Python-Service, der als transparenter Proxy für Game Server fungiert und Ihren Hauptserver automatisch per Wake-on-LAN aufweckt, wenn Spieler beitreten möchten. Speziell für stromsparende ARM-Boards entwickelt, die 24/7 laufen, während Ihr Gaming-PC aus bleibt, bis er gebraucht wird.
+Ein robuster, produktionsbereiter Python-Service, der als transparenter Proxy für Game Server fungiert und Ihren Hauptserver automatisch per Wake-on-LAN aufweckt, wenn Spieler beitreten möchten. Speziell für stromsparende ARM-Boards entwickelt, die 24/7 laufen, während Ihr Server PC aus bleibt, bis er gebraucht wird.
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -12,7 +12,7 @@ Ein robuster, produktionsbereiter Python-Service, der als transparenter Proxy f�
 
 ```
 🔴 Server PC: OFF (0W Stromverbrauch)
-🟢 Tinker Board: Proxy aktiv (5W)
+🟢 ARM Board: Proxy aktiv (5W)
 
 Spieler verbindet sich → 💤 WoL Magic Packet → 🚀 Server startet
 ├── Minecraft: "Join to start server" → Login → Server wake
@@ -73,8 +73,8 @@ graph TB
 - Systemd for service management
 
 ### Network Setup
-- Static IP address for your gaming PC
-- Wake-on-LAN enabled on gaming PC
+- Static IP address for your server PC
+- Wake-on-LAN enabled on server PC
 - Port forwarding configured for game ports (if remote access needed)
 
 ## 🚀 Quick Installation
@@ -118,8 +118,8 @@ Edit `config.json` with your specific settings:
 ```json
 {
   "server": {
-    "target_ip": "192.168.1.100",         // Your gaming PC's IP
-    "mac_address": "00:1B:44:11:3A:B7",   // Your gaming PC's MAC address
+    "target_ip": "192.168.1.100",         // Your server PC's IP
+    "mac_address": "AA:BB:CC:DD:EE:FF",   // Your server PC's MAC address
     "network_interface": "eth0"            // Network interface on proxy device
   },
   "timing": {
@@ -180,7 +180,7 @@ Edit `config.json` with your specific settings:
    python3 main.py --validate-config --config /etc/wol-proxy/config.json
    ```
 
-## 🎯 Gaming PC Setup
+## 🎯 Server PC Setup
 
 ### Target Server Setup (Windows/Linux)
 
