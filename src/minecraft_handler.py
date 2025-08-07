@@ -370,13 +370,21 @@ class MinecraftHandler:
             else:
                 await self.handle_client_connection(reader, writer)
         
-        server = await asyncio.start_server(
-            handle_connection,
-            '0.0.0.0',  # Bind to all interfaces
-            self.port,
-            reuse_addr=True,
-            reuse_port=True
-        )
+        # Start server with compatibility for older Python versions
+        try:
+            server = await asyncio.start_server(
+                handle_connection,
+                '0.0.0.0',  # Bind to all interfaces
+                self.port,
+                reuse_port=True
+            )
+        except TypeError:
+            # Fallback for older Python versions
+            server = await asyncio.start_server(
+                handle_connection,
+                '0.0.0.0',  # Bind to all interfaces
+                self.port
+            )
         
         logger.info(f"Minecraft proxy server started on port {self.port}")
         return server

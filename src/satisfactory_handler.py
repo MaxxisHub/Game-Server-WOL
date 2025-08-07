@@ -44,17 +44,29 @@ class SatisfactoryHandler:
         
         for port in [self.game_port, self.query_port, self.beacon_port]:
             try:
-                # Create UDP server for each port
-                transport, protocol = await asyncio.get_event_loop().create_datagram_endpoint(
-                    lambda: SatisfactoryProtocol(
-                        port=port,
-                        target_ip=self.target_ip,
-                        handler=self,
-                        on_traffic_callback=on_traffic_callback
-                    ),
-                    local_addr=('0.0.0.0', port),
-                    reuse_port=True
-                )
+                # Create UDP server for each port with compatibility for older Python
+                try:
+                    transport, protocol = await asyncio.get_event_loop().create_datagram_endpoint(
+                        lambda: SatisfactoryProtocol(
+                            port=port,
+                            target_ip=self.target_ip,
+                            handler=self,
+                            on_traffic_callback=on_traffic_callback
+                        ),
+                        local_addr=('0.0.0.0', port),
+                        reuse_port=True
+                    )
+                except TypeError:
+                    # Fallback for older Python versions
+                    transport, protocol = await asyncio.get_event_loop().create_datagram_endpoint(
+                        lambda: SatisfactoryProtocol(
+                            port=port,
+                            target_ip=self.target_ip,
+                            handler=self,
+                            on_traffic_callback=on_traffic_callback
+                        ),
+                        local_addr=('0.0.0.0', port)
+                    )
                 
                 servers[port] = transport
                 logger.info(f"Satisfactory UDP listener started on port {port}")
@@ -255,12 +267,19 @@ class SatisfactoryForwarder:
             ]
             
             for port in ports:
-                # Create transparent forwarder
-                transport, protocol = await asyncio.get_event_loop().create_datagram_endpoint(
-                    lambda p=port: TransparentForwardProtocol(self.target_ip, p),
-                    local_addr=('0.0.0.0', port),
-                    reuse_port=True
-                )
+                # Create transparent forwarder with compatibility for older Python
+                try:
+                    transport, protocol = await asyncio.get_event_loop().create_datagram_endpoint(
+                        lambda p=port: TransparentForwardProtocol(self.target_ip, p),
+                        local_addr=('0.0.0.0', port),
+                        reuse_port=True
+                    )
+                except TypeError:
+                    # Fallback for older Python versions
+                    transport, protocol = await asyncio.get_event_loop().create_datagram_endpoint(
+                        lambda p=port: TransparentForwardProtocol(self.target_ip, p),
+                        local_addr=('0.0.0.0', port)
+                    )
                 
                 self.forwarders[port] = transport
                 logger.debug(f"Transparent UDP forwarder started on port {port}")
