@@ -43,13 +43,13 @@ install_dependencies() {
     log_info "Installing system dependencies..."
     
     apt-get update
-    apt-get install -y \\
-        python3 \\
-        python3-pip \\
-        python3-venv \\
-        curl \\
-        iputils-arping \\
-        iproute2 \\
+    apt-get install -y \
+        python3 \
+        python3-pip \
+        python3-venv \
+        curl \
+        iputils-arping \
+        iproute2 \
         sudo
     
     log_info "System dependencies installed"
