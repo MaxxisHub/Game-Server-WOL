@@ -93,7 +93,7 @@ sudo ./install.sh
 sudo apt update && sudo apt install -y python3 python3-pip python3-venv git iputils-arping
 
 # Clone repository
-git clone https://github.com/example/wol-game-proxy.git
+git clone https://github.com/MaxxisHub/Game-Server-WOL.git
 cd wol-game-proxy
 
 # Create virtual environment
