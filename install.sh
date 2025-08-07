@@ -4,6 +4,9 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Configuration
 INSTALL_DIR="/opt/wol-proxy"
 CONFIG_DIR="/etc/wol-proxy"
@@ -36,6 +39,28 @@ check_root() {
         log_error "This script must be run as root (use sudo)"
         exit 1
     fi
+}
+
+# Verify required files exist
+check_files() {
+    log_info "Checking required files..."
+    
+    local required_files=(
+        "$SCRIPT_DIR/main.py"
+        "$SCRIPT_DIR/requirements.txt"
+        "$SCRIPT_DIR/wol-proxy.service"
+        "$SCRIPT_DIR/src"
+    )
+    
+    for file in "${required_files[@]}"; do
+        if [[ ! -e "$file" ]]; then
+            log_error "Required file/directory not found: $file"
+            log_error "Please run this script from the Game-Server-WOL directory"
+            exit 1
+        fi
+    done
+    
+    log_info "All required files found"
 }
 
 # Install system dependencies
@@ -82,10 +107,10 @@ create_directories() {
 install_application() {
     log_info "Installing application files..."
     
-    # Copy application files
-    cp -r src/ "$INSTALL_DIR/"
-    cp main.py "$INSTALL_DIR/"
-    cp requirements.txt "$INSTALL_DIR/"
+    # Copy application files from script directory
+    cp -r "$SCRIPT_DIR/src/" "$INSTALL_DIR/"
+    cp "$SCRIPT_DIR/main.py" "$INSTALL_DIR/"
+    cp "$SCRIPT_DIR/requirements.txt" "$INSTALL_DIR/"
     
     # Set permissions
     chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
@@ -113,12 +138,23 @@ setup_configuration() {
     
     if [[ ! -f "$CONFIG_DIR/config.json" ]]; then
         # Generate example config in a writable directory
-        cd /tmp
-        sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/main.py" --create-config
-        mv config.json.example "$CONFIG_DIR/config.json"
+        local temp_dir
+        temp_dir=$(mktemp -d)
         
-        log_warn "Default configuration created at $CONFIG_DIR/config.json"
-        log_warn "Please edit this file with your server details before starting the service"
+        cd "$temp_dir"
+        sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/main.py" --create-config
+        
+        if [[ -f "config.json.example" ]]; then
+            cp "config.json.example" "$CONFIG_DIR/config.json"
+            log_warn "Default configuration created at $CONFIG_DIR/config.json"
+            log_warn "Please edit this file with your server details before starting the service"
+        else
+            log_error "Failed to create example configuration"
+            exit 1
+        fi
+        
+        # Cleanup
+        rm -rf "$temp_dir"
     else
         log_info "Configuration file already exists at $CONFIG_DIR/config.json"
     fi
@@ -146,7 +182,12 @@ EOF
 install_service() {
     log_info "Installing systemd service..."
     
-    cp "$SERVICE_FILE" /etc/systemd/system/
+    if [[ ! -f "$SCRIPT_DIR/$SERVICE_FILE" ]]; then
+        log_error "Service file not found: $SCRIPT_DIR/$SERVICE_FILE"
+        exit 1
+    fi
+    
+    cp "$SCRIPT_DIR/$SERVICE_FILE" /etc/systemd/system/
     chmod 644 "/etc/systemd/system/$SERVICE_FILE"
     
     systemctl daemon-reload
@@ -239,6 +280,7 @@ main() {
     log_info "Starting WoL Game Server Proxy installation..."
     
     check_root
+    check_files
     install_dependencies
     create_user
     create_directories
