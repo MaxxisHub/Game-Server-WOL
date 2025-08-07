@@ -112,7 +112,8 @@ setup_configuration() {
     log_info "Setting up configuration..."
     
     if [[ ! -f "$CONFIG_DIR/config.json" ]]; then
-        # Generate example config
+        # Generate example config in a writable directory
+        cd /tmp
         sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/main.py" --create-config
         mv config.json.example "$CONFIG_DIR/config.json"
         
