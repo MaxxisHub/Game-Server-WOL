@@ -70,32 +70,21 @@ class ServerMonitor:
         self.is_monitoring = False
     
     async def check_server_reachable(self) -> bool:
-        """Check if the main server is reachable via TCP connection instead of ping."""
+        """Check if the main server is reachable via TCP connection to game ports only."""
+        # Only check Minecraft port - SSH port can be misleading due to network devices
         try:
-            # Use TCP connection test instead of ping (more reliable)
             reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(self.target_ip, 22),  # SSH port is usually open
+                asyncio.open_connection(self.target_ip, 25565),  # Minecraft port only
                 timeout=self.server_check_timeout
             )
             writer.close()
             await writer.wait_closed()
-            logger.debug(f"Server {self.target_ip} reachable via TCP")
+            logger.debug(f"Server {self.target_ip} reachable via Minecraft port")
             return True
             
-        except Exception:
-            # Try Minecraft port as fallback
-            try:
-                reader, writer = await asyncio.wait_for(
-                    asyncio.open_connection(self.target_ip, 25565),
-                    timeout=self.server_check_timeout
-                )
-                writer.close()
-                await writer.wait_closed()
-                logger.debug(f"Server {self.target_ip} reachable via Minecraft port")
-                return True
-            except Exception as e:
-                logger.debug(f"Server not reachable: {e}")
-                return False
+        except Exception as e:
+            logger.debug(f"Server not reachable on Minecraft port: {e}")
+            return False
     
     async def check_port_open(self, port: int, protocol: str = "tcp") -> bool:
         """Check if a specific port is open on the main server."""
