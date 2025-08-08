@@ -280,10 +280,14 @@ class ProxyManager:
         
         logger.info(f"Waiting up to {boot_wait_seconds} seconds for server to boot")
         
-        # Wait for server to come online
+        # Add initial delay to allow WOL packet to be processed
+        await asyncio.sleep(10)
+        logger.info("Initial WOL processing delay completed, starting server monitoring")
+        
+        # Wait for server to come online with more frequent checks initially
         server_online = await self.server_monitor.wait_for_server_online(
-            max_wait_seconds=boot_wait_seconds,
-            check_interval=5
+            max_wait_seconds=boot_wait_seconds - 10,  # Account for initial delay
+            check_interval=3  # More frequent checks for faster detection
         )
         
         if server_online:

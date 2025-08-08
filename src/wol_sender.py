@@ -62,7 +62,7 @@ class WoLSender:
         # - 6 bytes of 0xFF
         # - MAC address repeated 16 times
         
-        magic_header = b'\\xff' * 6
+        magic_header = b'\xff' * 6
         mac_repeated = self.mac_bytes * 16
         
         return magic_header + mac_repeated
@@ -79,6 +79,7 @@ class WoLSender:
                 # Send to multiple ports for better compatibility
                 wol_ports = [7, 9]  # Standard WoL ports
                 
+                # Send to broadcast address
                 for port in wol_ports:
                     sock.sendto(magic_packet, (self.broadcast_ip, port))
                     logger.debug(f"WoL packet sent to {self.broadcast_ip}:{port}")
@@ -91,8 +92,19 @@ class WoLSender:
                             logger.debug(f"WoL packet sent to {self.target_ip}:{port}")
                         except Exception as e:
                             logger.debug(f"Direct send to {self.target_ip}:{port} failed: {e}")
+                
+                # Additional broadcast to 255.255.255.255 for better coverage
+                for port in wol_ports:
+                    try:
+                        sock.sendto(magic_packet, ('255.255.255.255', port))
+                        logger.debug(f"WoL packet sent to 255.255.255.255:{port}")
+                    except Exception as e:
+                        logger.debug(f"Global broadcast to port {port} failed: {e}")
             
-            logger.info(f"Wake-on-LAN packet sent to MAC {self.mac_address}")
+            # Verify packet content
+            packet_info = self.get_packet_info()
+            logger.info(f"Wake-on-LAN packet sent to MAC {self.mac_address} "
+                       f"(packet size: {packet_info['packet_size']} bytes)")
             return True
             
         except Exception as e:

@@ -32,6 +32,10 @@ ENV/
 *.swp
 *.swo
 
+# Development tools
+.claude/
+.devcontainer/
+
 # OS
 .DS_Store
 Thumbs.db

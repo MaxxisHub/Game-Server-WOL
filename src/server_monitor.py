@@ -70,21 +70,35 @@ class ServerMonitor:
         self.is_monitoring = False
     
     async def check_server_reachable(self) -> bool:
-        """Check if the main server is reachable via TCP connection to game ports only."""
-        # Only check Minecraft port - SSH port can be misleading due to network devices
-        try:
-            reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(self.target_ip, 25565),  # Minecraft port only
-                timeout=self.server_check_timeout
-            )
-            writer.close()
-            await writer.wait_closed()
-            logger.debug(f"Server {self.target_ip} reachable via Minecraft port")
-            return True
-            
-        except Exception as e:
-            logger.debug(f"Server not reachable on Minecraft port: {e}")
-            return False
+        """Check if the main server is reachable via multiple methods."""
+        # Check multiple ports to better detect server state
+        check_ports = []
+        
+        # Add game-specific ports
+        if self.minecraft_enabled:
+            check_ports.append(25565)  # Minecraft
+        
+        # Add common service ports for better detection
+        check_ports.extend([22, 80, 443])  # SSH, HTTP, HTTPS
+        
+        # Try each port until one succeeds
+        for port in check_ports:
+            try:
+                reader, writer = await asyncio.wait_for(
+                    asyncio.open_connection(self.target_ip, port),
+                    timeout=self.server_check_timeout
+                )
+                writer.close()
+                await writer.wait_closed()
+                logger.debug(f"Server {self.target_ip} reachable via port {port}")
+                return True
+                
+            except Exception:
+                logger.debug(f"Server not reachable on port {port}")
+                continue
+        
+        logger.debug(f"Server {self.target_ip} not reachable on any checked ports")
+        return False
     
     async def check_port_open(self, port: int, protocol: str = "tcp") -> bool:
         """Check if a specific port is open on the main server."""
