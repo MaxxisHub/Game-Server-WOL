@@ -170,6 +170,42 @@ get_config() {
     read -p "Enable Minecraft? [y/N]: " MINECRAFT_ENABLED
     case $MINECRAFT_ENABLED in [Yy]*) MINECRAFT_ENABLED=true ;; *) MINECRAFT_ENABLED=false ;; esac
     
+    # Minecraft MOTD configuration if enabled
+    if [[ "$MINECRAFT_ENABLED" == "true" ]]; then
+        echo
+        log_question "Minecraft MOTD configuration:"
+        echo "Configure custom messages for different server states"
+        echo
+        
+        read -p "MOTD when server is offline [§6WoL Proxy §8- §aJoin to start server!]: " MOTD_OFFLINE
+        MOTD_OFFLINE=${MOTD_OFFLINE:-"§6WoL Proxy §8- §aJoin to start server!"}
+        
+        read -p "MOTD when server is starting [§6Server Starting §8- §ePlease wait...]: " MOTD_STARTING  
+        MOTD_STARTING=${MOTD_STARTING:-"§6Server Starting §8- §ePlease wait..."}
+        
+        read -p "Kick message for login attempts [Server is starting, please wait and try again in a moment!]: " KICK_MESSAGE
+        KICK_MESSAGE=${KICK_MESSAGE:-"Server is starting, please wait and try again in a moment!"}
+        
+        read -p "Version text when starting [Starting...]: " VERSION_TEXT_STARTING
+        VERSION_TEXT_STARTING=${VERSION_TEXT_STARTING:-"Starting..."}
+        
+        read -p "Max players display [20]: " MAX_PLAYERS_DISPLAY
+        MAX_PLAYERS_DISPLAY=${MAX_PLAYERS_DISPLAY:-20}
+        
+        echo
+        echo "Selected Minecraft configuration:"
+        echo "  - Offline MOTD: $MOTD_OFFLINE"
+        echo "  - Starting MOTD: $MOTD_STARTING"
+        echo "  - Max players: $MAX_PLAYERS_DISPLAY"
+    else
+        # Default values for disabled minecraft
+        MOTD_OFFLINE="§6WoL Proxy §8- §aJoin to start server!"
+        MOTD_STARTING="§6Server Starting §8- §ePlease wait..."
+        KICK_MESSAGE="Server is starting, please wait and try again in a moment!"
+        VERSION_TEXT_STARTING="Starting..."
+        MAX_PLAYERS_DISPLAY=20
+    fi
+    
     read -p "Enable Satisfactory? [y/N]: " SATISFACTORY_ENABLED
     case $SATISFACTORY_ENABLED in [Yy]*) SATISFACTORY_ENABLED=true ;; *) SATISFACTORY_ENABLED=false ;; esac
 }
