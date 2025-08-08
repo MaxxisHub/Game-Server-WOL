@@ -183,7 +183,7 @@ def validate_config(path: str) -> None:
         print(f"Configuration file {path} is valid")
         
         # Print summary
-        print("\\nConfiguration Summary:")
+        print("\nConfiguration Summary:")
         print(f"  Target Server: {config['server']['target_ip']} ({config['server']['mac_address']})")
         print(f"  Minecraft: {'Enabled' if config['minecraft']['enabled'] else 'Disabled'}")
         if config['minecraft']['enabled']:
@@ -304,7 +304,7 @@ Examples:
     try:
         return asyncio.run(main_service(args))
     except KeyboardInterrupt:
-        print("\\nInterrupted")
+        print("\nInterrupted")
         return 0
     except Exception as e:
         print(f"Fatal error: {e}", file=sys.stderr)

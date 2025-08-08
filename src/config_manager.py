@@ -129,13 +129,25 @@ class ConfigManager:
             if not self._validate_port(port):
                 errors.append(f"Invalid Satisfactory port: {port}")
         
-        # Validate timing values (skip comment fields)
+        # Validate timing values with reasonable bounds (skip comment fields)
         timing = self._config["timing"]
+        timing_bounds = {
+            "boot_wait_seconds": (30, 600),
+            "health_check_interval": (5, 300), 
+            "wol_retry_interval": (1, 60),
+            "server_check_timeout": (1, 30),
+            "connection_timeout": (1, 60)
+        }
+        
         for key, value in timing.items():
             if key.startswith('_comment'):
                 continue
             if not isinstance(value, (int, float)) or value <= 0:
                 errors.append(f"Invalid timing value for {key}: {value}")
+            elif key in timing_bounds:
+                min_val, max_val = timing_bounds[key]
+                if not (min_val <= value <= max_val):
+                    errors.append(f"{key} must be between {min_val} and {max_val} seconds")
         
         # Validate logging configuration
         log_level = self._config["logging"]["level"].upper()
@@ -144,7 +156,7 @@ class ConfigManager:
             errors.append(f"Invalid log level: {log_level}. Must be one of {valid_levels}")
         
         if errors:
-            error_msg = "Configuration validation failed:\\n" + "\\n".join(errors)
+            error_msg = "Configuration validation failed:\n" + "\n".join(errors)
             logger.error(error_msg)
             raise ValueError(error_msg)
     

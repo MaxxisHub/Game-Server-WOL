@@ -188,8 +188,10 @@ setup_sudo() {
     log_info "Setting up sudo permissions for IP management..."
     
     cat > /etc/sudoers.d/wol-proxy << EOF
-# WoL Proxy - Allow IP address management
-$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/ip addr add *, /sbin/ip addr del *
+# WoL Proxy - Allow IP address management (restricted to private networks)
+$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/ip addr add 10.*.*.*/24 dev *, /sbin/ip addr del 10.*.*.*/24 dev *
+$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/ip addr add 192.168.*.*/24 dev *, /sbin/ip addr del 192.168.*.*/24 dev *
+$SERVICE_USER ALL=(ALL) NOPASSWD: /sbin/ip addr add 172.16.*.*/24 dev *, /sbin/ip addr del 172.16.*.*/24 dev *
 EOF
     
     chmod 440 /etc/sudoers.d/wol-proxy

@@ -185,10 +185,14 @@ class ProxyManager:
         target_ip = self.config["server"]["target_ip"]
         minecraft_port = self.config["minecraft"]["port"]
         
+        server_reader = None
+        server_writer = None
+        
         try:
-            # Connect to main server
-            server_reader, server_writer = await asyncio.open_connection(
-                target_ip, minecraft_port
+            # Connect to main server with timeout
+            server_reader, server_writer = await asyncio.wait_for(
+                asyncio.open_connection(target_ip, minecraft_port),
+                timeout=self.config["timing"]["connection_timeout"]
             )
             
             # Start bidirectional forwarding
@@ -227,12 +231,13 @@ class ProxyManager:
         finally:
             # Clean up connections
             for writer in [client_writer, server_writer]:
-                try:
-                    if writer and not writer.is_closing():
-                        writer.close()
-                        await writer.wait_closed()
-                except:
-                    pass
+                if writer:
+                    try:
+                        if not writer.is_closing():
+                            writer.close()
+                            await writer.wait_closed()
+                    except Exception as cleanup_error:
+                        logger.debug(f"Error during connection cleanup: {cleanup_error}")
     
     async def _handle_satisfactory_traffic(self, protocol: str, port: int, 
                                          client_addr: tuple, data_size: int) -> None:

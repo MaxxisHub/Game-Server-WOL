@@ -274,11 +274,13 @@ class MinecraftHandler:
         logger.debug(f"Minecraft connection from {client_addr}")
         
         try:
-            # Read handshake packet
+            # Read handshake packet with size limit
             try:
                 handshake_data = await asyncio.wait_for(reader.read(1024), timeout=5.0)
                 if not handshake_data:
                     return False, "Connection closed during handshake"
+                if len(handshake_data) > 1024:  # Additional safety check
+                    return False, "Handshake packet too large"
             except asyncio.TimeoutError:
                 return False, "Handshake timeout"
             

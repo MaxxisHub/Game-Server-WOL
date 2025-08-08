@@ -43,14 +43,25 @@ class WoLSender:
     def _get_broadcast_address(self, ip: str) -> str:
         """Calculate broadcast address for the network."""
         try:
-            # For simplicity, assume /24 network and calculate broadcast
-            ip_parts = ip.split('.')
-            if len(ip_parts) != 4:
-                raise ValueError(f"Invalid IP address: {ip}")
+            # Get network mask from config or default to /24
+            network_mask = self.config.get("server", {}).get("network_mask", 24)
             
-            # Simple /24 broadcast calculation
-            broadcast_parts = ip_parts[:-1] + ['255']
-            return '.'.join(broadcast_parts)
+            # For simplicity, support common masks
+            if network_mask == 24:
+                ip_parts = ip.split('.')
+                if len(ip_parts) != 4:
+                    raise ValueError(f"Invalid IP address: {ip}")
+                broadcast_parts = ip_parts[:-1] + ['255']
+                return '.'.join(broadcast_parts)
+            elif network_mask == 16:
+                ip_parts = ip.split('.')
+                if len(ip_parts) != 4:
+                    raise ValueError(f"Invalid IP address: {ip}")
+                broadcast_parts = ip_parts[:-2] + ['255', '255'] 
+                return '.'.join(broadcast_parts)
+            else:
+                # Fallback to general broadcast for unsupported masks
+                return '255.255.255.255'
             
         except Exception:
             # Fallback to general broadcast

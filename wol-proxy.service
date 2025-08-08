@@ -22,7 +22,7 @@ StartLimitInterval=60
 StartLimitBurst=5
 
 # Security settings
-NoNewPrivileges=false
+NoNewPrivileges=true
 PrivateTmp=true
 PrivateDevices=true
 ProtectSystem=strict

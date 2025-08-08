@@ -78,8 +78,9 @@ class ServerMonitor:
         if self.minecraft_enabled:
             check_ports.append(25565)  # Minecraft
         
-        # Add common service ports for better detection
-        check_ports.extend([22, 80, 443])  # SSH, HTTP, HTTPS
+        # Add configurable service ports for better detection
+        additional_ports = self.config.get("server", {}).get("additional_check_ports", [22])
+        check_ports.extend(additional_ports)
         
         # Try each port until one succeeds
         for port in check_ports:
