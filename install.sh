@@ -74,7 +74,10 @@ install_dependencies() {
         python3-venv \
         curl \
         iputils-arping \
+        iputils-ping \
         iproute2 \
+        net-tools \
+        wakeonlan \
         sudo
     
     log_info "System dependencies installed"

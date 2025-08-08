@@ -41,6 +41,62 @@ validate_mac() {
     return 1
 }
 
+get_default_interface() {
+    # Get default network interface from default route
+    ip route | grep '^default' | head -n1 | sed 's/.*dev \([^ ]*\).*/\1/'
+}
+
+list_interfaces() {
+    echo "Available network interfaces:"
+    local i=1
+    while IFS= read -r interface; do
+        local ip_info=$(ip addr show "$interface" | grep 'inet ' | awk '{print $2}' | head -n1)
+        echo "  $i) $interface ${ip_info:+($ip_info)}"
+        ((i++))
+    done < <(ip link show | grep '^[0-9]' | cut -d: -f2 | sed 's/^ //' | grep -v '^lo$')
+}
+
+select_interface() {
+    local interfaces=()
+    while IFS= read -r interface; do
+        interfaces+=("$interface")
+    done < <(ip link show | grep '^[0-9]' | cut -d: -f2 | sed 's/^ //' | grep -v '^lo$')
+    
+    if [[ ${#interfaces[@]} -eq 0 ]]; then
+        echo "eth0"  # fallback
+        return
+    fi
+    
+    if [[ ${#interfaces[@]} -eq 1 ]]; then
+        echo "${interfaces[0]}"
+        return
+    fi
+    
+    echo
+    list_interfaces
+    echo
+    
+    while true; do
+        read -p "Select interface (1-${#interfaces[@]}) or enter name manually: " selection
+        
+        if [[ "$selection" =~ ^[0-9]+$ ]] && [[ $selection -ge 1 ]] && [[ $selection -le ${#interfaces[@]} ]]; then
+            echo "${interfaces[$((selection-1))]}"
+            return
+        elif [[ -n "$selection" ]]; then
+            # Check if manually entered interface exists
+            if ip link show "$selection" &>/dev/null; then
+                echo "$selection"
+                return
+            else
+                log_error "Interface '$selection' not found!"
+            fi
+        else
+            log_error "Please make a selection!"
+        fi
+    done
+}
+
+
 get_config() {
     clear
     echo -e "${BLUE}🎮 WoL Game Server Proxy - Setup${NC}"
@@ -64,9 +120,49 @@ get_config() {
         log_error "Please enter a valid MAC address (e.g., AA:BB:CC:DD:EE:FF)!"
     done
     
-    # Optional settings
-    read -p "Network interface [eth0]: " NETWORK_INTERFACE
-    NETWORK_INTERFACE=${NETWORK_INTERFACE:-eth0}
+    # Network interface selection
+    echo
+    log_question "Network interface selection:"
+    local default_interface
+    default_interface=$(get_default_interface)
+    echo "Detected default interface: ${default_interface:-eth0}"
+    
+    echo "Options:"
+    echo "  1) Use default interface (${default_interface:-eth0})"
+    echo "  2) Select from available interfaces"
+    echo "  3) Enter manually"
+    
+    while true; do
+        read -p "Choice [1]: " interface_choice
+        interface_choice=${interface_choice:-1}
+        
+        case $interface_choice in
+            1)
+                NETWORK_INTERFACE=${default_interface:-eth0}
+                break
+                ;;
+            2)
+                NETWORK_INTERFACE=$(select_interface)
+                break
+                ;;
+            3)
+                read -p "Enter interface name: " NETWORK_INTERFACE
+                if [[ -n "$NETWORK_INTERFACE" ]]; then
+                    if ! ip link show "$NETWORK_INTERFACE" &>/dev/null; then
+                        log_error "Warning: Interface '$NETWORK_INTERFACE' not found, but will continue."
+                    fi
+                    break
+                else
+                    log_error "Please enter an interface name!"
+                fi
+                ;;
+            *)
+                log_error "Please choose 1, 2, or 3!"
+                ;;
+        esac
+    done
+    
+    echo "Selected interface: $NETWORK_INTERFACE"
     
     read -p "Server boot wait time [90]: " BOOT_WAIT
     BOOT_WAIT=${BOOT_WAIT:-90}
@@ -91,12 +187,19 @@ create_config() {
   "timing": {
     "boot_wait_seconds": $BOOT_WAIT,
     "health_check_interval": 15,
-    "wol_retry_interval": 5
+    "wol_retry_interval": 5,
+    "server_check_timeout": 3,
+    "connection_timeout": 5
   },
   "minecraft": {
     "enabled": $MINECRAFT_ENABLED,
     "port": 25565,
-    "motd_offline": "§aJoin to start server"
+    "protocol_version": 763,
+    "max_players_display": 20,
+    "motd_offline": "§6WoL Proxy §8- §aJoin to start server!",
+    "motd_starting": "§6Server Starting §8- §ePlease wait...",
+    "version_text_starting": "Starting...",
+    "kick_message": "Server is starting, please wait and try again in a moment!"
   },
   "satisfactory": {
     "enabled": $SATISFACTORY_ENABLED,
@@ -106,9 +209,13 @@ create_config() {
   },
   "logging": {
     "level": "INFO",
-    "file": "/var/log/wol-proxy.log"
+    "file": "/var/log/wol-proxy.log",
+    "max_size_mb": 10,
+    "backup_count": 3,
+    "console_output": false
   },
   "monitoring": {
+    "health_check_enabled": true,
     "status_endpoint_port": 8080
   }
 }
@@ -116,6 +223,11 @@ EOF
     
     chown root:root "$CONFIG_FILE"
     chmod 644 "$CONFIG_FILE"
+    
+    log_info "Configuration created with optimized settings"
+    echo "  - Improved server detection timeouts"
+    echo "  - Better Minecraft MOTD messages" 
+    echo "  - Enhanced logging configuration"
 }
 
 start_service() {
