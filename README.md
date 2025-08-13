@@ -60,27 +60,6 @@ chmod +x install.sh
 sudo ./install.sh
 ```
 
-### Manuelle Installation
-
-```bash
-# System-Abhängigkeiten installieren
-sudo apt update && sudo apt install -y python3 python3-pip python3-venv git iputils-arping iproute2
-
-# Repository klonen
-git clone https://github.com/MaxxisHub/Game-Server-WOL.git
-cd Game-Server-WOL
-
-# Virtual Environment erstellen
-python3 -m venv venv
-source venv/bin/activate
-
-# Python-Abhängigkeiten installieren
-pip install -r requirements.txt
-
-# Beispiel-Konfiguration erstellen
-python3 main.py --create-config
-```
-
 ## ⚙️ Konfiguration
 
 ### Schritt 1: MAC-Adresse des Servers herausfinden

@@ -341,6 +341,7 @@ class IPAddressManager:
         self.config = config
         self.target_ip = config["server"]["target_ip"]
         self.network_interface = config["server"]["network_interface"]
+        self.network_mask = config["server"]["network_mask"]
         
         self.ip_bound = False
         
@@ -350,7 +351,7 @@ class IPAddressManager:
             # Use ip command to add address (with CAP_NET_ADMIN capability)
             cmd = [
                 'ip', 'addr', 'add', 
-                f'{self.target_ip}/24', 
+                f'{self.target_ip}/{self.network_mask}',
                 'dev', self.network_interface
             ]
             
@@ -391,7 +392,7 @@ class IPAddressManager:
             # Use ip command to delete address (with CAP_NET_ADMIN capability)
             cmd = [
                 'ip', 'addr', 'del', 
-                f'{self.target_ip}/24', 
+                f'{self.target_ip}/{self.network_mask}',
                 'dev', self.network_interface
             ]
             

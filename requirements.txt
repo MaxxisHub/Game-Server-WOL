@@ -1,19 +1,10 @@
 # Wake-on-LAN Game Server Proxy Dependencies
 
-# Core async functionality
-aiofiles>=0.8.0
-
 # HTTP server for status endpoint
 aiohttp>=3.8.0
 
-# Wake-on-LAN functionality
-wakeonlan>=3.0.0
-
-# Network interface information
-netifaces>=0.11.0
-
-# System and process utilities
-psutil>=5.8.0
-
 # HTTP client for status checking
 requests>=2.28.0
+
+# Systemd notifications
+sdnotify>=0.3.2

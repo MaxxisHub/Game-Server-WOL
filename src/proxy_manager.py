@@ -8,6 +8,11 @@ from enum import Enum
 from typing import Optional, Dict, Any, Callable, List
 import json
 
+try:
+    import sdnotify
+except ImportError:
+    sdnotify = None
+
 from .config_manager import ConfigManager
 from .wol_sender import WoLSender
 from .minecraft_handler import MinecraftHandler
@@ -31,6 +36,9 @@ class ProxyManager:
     """Central coordinator for the Wake-on-LAN game server proxy."""
     
     def __init__(self, config_path: str = "config.json"):
+        # Systemd notifier
+        self.notifier = sdnotify.SystemdNotifier() if sdnotify else None
+
         # Configuration
         self.config_manager = ConfigManager(config_path)
         self.config = {}
@@ -134,6 +142,11 @@ class ProxyManager:
             
             self.is_running = True
             logger.info("WoL Game Server Proxy started successfully")
+
+            # Notify systemd that service is ready
+            if self.notifier:
+                self.notifier.notify("READY=1")
+
             return True
             
         except Exception as e:
@@ -411,6 +424,11 @@ class ProxyManager:
             return
         
         logger.info("Shutting down WoL Game Server Proxy...")
+
+        # Notify systemd of shutdown
+        if self.notifier:
+            self.notifier.notify("STOPPING=1")
+
         await self._transition_to_state(ProxyState.STOPPING)
         
         self.is_running = False

@@ -25,7 +25,9 @@ class ConfigManager:
             "server": {
                 "target_ip": "192.168.1.100",
                 "mac_address": "AA:BB:CC:DD:EE:FF",
-                "network_interface": "eth0"
+                "network_interface": "eth0",
+                "network_mask": 24,
+                "additional_check_ports": [22]
             },
             "timing": {
                 "boot_wait_seconds": 90,
@@ -114,6 +116,16 @@ class ConfigManager:
         if not self._validate_mac_address(self._config["server"]["mac_address"]):
             errors.append(f"Invalid MAC address: {self._config['server']['mac_address']}")
         
+        # Validate network mask
+        network_mask = self._config["server"]["network_mask"]
+        if not (isinstance(network_mask, int) and 1 <= network_mask <= 32):
+            errors.append(f"Invalid network_mask: {network_mask}. Must be an integer between 1 and 32.")
+
+        # Validate additional check ports
+        additional_ports = self._config["server"]["additional_check_ports"]
+        if not isinstance(additional_ports, list) or not all(self._validate_port(p) for p in additional_ports):
+            errors.append(f"Invalid additional_check_ports: {additional_ports}. Must be a list of valid port numbers.")
+
         # Validate ports
         minecraft_port = self._config["minecraft"]["port"]
         if not self._validate_port(minecraft_port):
@@ -213,7 +225,11 @@ class ConfigManager:
                 "_comment": "IP address and MAC of the main game server",
                 "target_ip": "192.168.1.100",
                 "mac_address": "AA:BB:CC:DD:EE:FF",
-                "network_interface": "eth0"
+                "network_interface": "eth0",
+                "network_mask": 24,
+                "additional_check_ports": [
+                    22
+                ]
             },
             "_comment_timing": "Timing and timeout configuration",
             "timing": {
