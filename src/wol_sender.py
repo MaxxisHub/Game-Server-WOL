@@ -6,6 +6,7 @@ import socket
 import struct
 from typing import Optional
 import re
+import ipaddress
 
 
 logger = logging.getLogger(__name__)
@@ -41,29 +42,23 @@ class WoLSender:
             raise ValueError(f"Invalid MAC address format: {mac}") from e
     
     def _get_broadcast_address(self, ip: str) -> str:
-        """Calculate broadcast address for the network."""
+        """Calculate broadcast address for the network using the ipaddress module."""
         try:
-            # Get network mask from config or default to /24
+            # Get network mask from config (e.g., 24) or default to 24
             network_mask = self.config.get("server", {}).get("network_mask", 24)
-            
-            # For simplicity, support common masks
-            if network_mask == 24:
-                ip_parts = ip.split('.')
-                if len(ip_parts) != 4:
-                    raise ValueError(f"Invalid IP address: {ip}")
-                broadcast_parts = ip_parts[:-1] + ['255']
-                return '.'.join(broadcast_parts)
-            elif network_mask == 16:
-                ip_parts = ip.split('.')
-                if len(ip_parts) != 4:
-                    raise ValueError(f"Invalid IP address: {ip}")
-                broadcast_parts = ip_parts[:-2] + ['255', '255'] 
-                return '.'.join(broadcast_parts)
-            else:
-                # Fallback to general broadcast for unsupported masks
-                return '255.255.255.255'
-            
-        except Exception:
+
+            # Create an IPv4 interface object
+            interface = ipaddress.IPv4Interface(f"{ip}/{network_mask}")
+
+            # Get the broadcast address
+            broadcast_addr = str(interface.network.broadcast_address)
+
+            logger.debug(f"Calculated broadcast address: {broadcast_addr} for {ip}/{network_mask}")
+            return broadcast_addr
+
+        except (ValueError, KeyError) as e:
+            logger.warning(f"Could not calculate broadcast address for {ip}: {e}. "
+                           "Falling back to global broadcast '255.255.255.255'.")
             # Fallback to general broadcast
             return '255.255.255.255'
     
@@ -79,47 +74,51 @@ class WoLSender:
         return magic_header + mac_repeated
     
     async def send_wol_packet(self) -> bool:
-        """Send a single Wake-on-LAN packet."""
+        """Send a single Wake-on-LAN packet to multiple destinations for reliability."""
+        magic_packet = self._create_magic_packet()
+        sent_successfully = False
+
+        # Define destinations: calculated broadcast, target IP, and global broadcast.
+        # Using a dictionary to ensure unique IPs and provide descriptive names.
+        destinations = {
+            self.broadcast_ip: "Calculated Broadcast",
+            self.target_ip: "Target IP",
+            "255.255.255.255": "Global Broadcast"
+        }
+
         try:
-            magic_packet = self._create_magic_packet()
-            
             # Create UDP socket
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 
-                # Send to multiple ports for better compatibility
-                wol_ports = [7, 9]  # Standard WoL ports
+                wol_ports = [9, 7]  # Standard WoL ports (9 is primary)
                 
-                # Send to broadcast address
-                for port in wol_ports:
-                    sock.sendto(magic_packet, (self.broadcast_ip, port))
-                    logger.debug(f"WoL packet sent to {self.broadcast_ip}:{port}")
-                
-                # Also send directly to target IP if different from broadcast
-                if self.target_ip != self.broadcast_ip:
+                for ip_addr, name in destinations.items():
+                    if not ip_addr:  # Skip if IP is empty
+                        continue
+
                     for port in wol_ports:
                         try:
-                            sock.sendto(magic_packet, (self.target_ip, port))
-                            logger.debug(f"WoL packet sent to {self.target_ip}:{port}")
+                            sock.sendto(magic_packet, (ip_addr, port))
+                            logger.debug(f"Successfully sent WoL packet via {name} to {ip_addr}:{port}")
+                            sent_successfully = True
+                        except OSError as e:
+                            # Log specific OS errors, e.g., "Network is unreachable"
+                            logger.warning(f"Could not send WoL packet via {name} to {ip_addr}:{port}. Error: {e}")
                         except Exception as e:
-                            logger.debug(f"Direct send to {self.target_ip}:{port} failed: {e}")
-                
-                # Additional broadcast to 255.255.255.255 for better coverage
-                for port in wol_ports:
-                    try:
-                        sock.sendto(magic_packet, ('255.255.255.255', port))
-                        logger.debug(f"WoL packet sent to 255.255.255.255:{port}")
-                    except Exception as e:
-                        logger.debug(f"Global broadcast to port {port} failed: {e}")
-            
-            # Verify packet content
-            packet_info = self.get_packet_info()
-            logger.info(f"Wake-on-LAN packet sent to MAC {self.mac_address} "
-                       f"(packet size: {packet_info['packet_size']} bytes)")
-            return True
-            
+                            logger.error(f"An unexpected error occurred when sending WoL packet via {name} to {ip_addr}:{port}: {e}")
+
+            if sent_successfully:
+                packet_info = self.get_packet_info()
+                logger.info(f"Wake-on-LAN packet sent for MAC {self.mac_address} "
+                           f"(broadcast: {self.broadcast_ip}, size: {packet_info['packet_size']} bytes)")
+                return True
+            else:
+                logger.error(f"Failed to send Wake-on-LAN packet for MAC {self.mac_address} to any destination.")
+                return False
+
         except Exception as e:
-            logger.error(f"Failed to send Wake-on-LAN packet: {e}")
+            logger.error(f"Failed to create socket for sending Wake-on-LAN packet: {e}")
             return False
     
     async def wake_server_with_retry(self, max_retries: int = 3) -> bool:
