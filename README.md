@@ -89,13 +89,16 @@ sudo nano /etc/wol-proxy/config.json
   "server": {
     "target_ip": "192.168.1.100",
     "mac_address": "AA:BB:CC:DD:EE:FF",
-    "network_interface": "eth0"
+    "network_interface": "eth0",
+    "network_mask": 24,
+    "additional_check_ports": [22]
   },
   "timing": {
     "boot_wait_seconds": 90,
     "health_check_interval": 15,
     "wol_retry_interval": 5,
-    "connection_timeout": 30
+    "connection_timeout": 30,
+    "server_check_timeout": 5
   },
   "minecraft": {
     "enabled": true,
@@ -204,6 +207,7 @@ arp -a | grep 192.168.1.100
 ip addr show
 
 # IP-Management-Berechtigungen testen
+# (Ersetzen Sie /24 mit Ihrer network_mask aus der Konfiguration)
 sudo ip addr add 192.168.1.100/24 dev eth0
 sudo ip addr del 192.168.1.100/24 dev eth0
 ```
