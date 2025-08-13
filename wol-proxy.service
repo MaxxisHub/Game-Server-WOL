@@ -5,7 +5,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=exec
+Type=notify
 User=wol-proxy
 Group=wol-proxy
 WorkingDirectory=/opt/wol-proxy

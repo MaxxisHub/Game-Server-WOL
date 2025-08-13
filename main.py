@@ -14,6 +14,11 @@ import os
 import json
 from pathlib import Path
 
+try:
+    import sdnotify
+except ImportError:
+    sdnotify = None
+
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
