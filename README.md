@@ -48,7 +48,7 @@ Spieler verbindet → 💤 WoL Magic Packet → 🚀 Server startet automatisch
 
 ## 🚀 Installation
 
-### Automatische Installation (Empfohlen)
+### Automatische Installation
 
 ```bash
 # Repository klonen
